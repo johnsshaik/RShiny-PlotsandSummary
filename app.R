@@ -7,6 +7,11 @@ library(haven)
 library(wordcloud2)
 library(car)
 library(psych)
+library(factoextra)
+library(ggVennDiagram)
+library(ggridges)
+
+#install.packages("ggridges")
 
 ui <- shinyUI(fluidPage(
   titlePanel("Data Analysis & Visualization"),
@@ -49,6 +54,7 @@ ui <- shinyUI(fluidPage(
     ),
     tabPanel(
       "Generate Plots",
+      #titlePanel("Select X-axis and Y-axis Variables and produce plots"),
       pageWithSidebar(
         headerPanel(''),
         sidebarPanel(
@@ -63,7 +69,10 @@ ui <- shinyUI(fluidPage(
                 "Boxplot" = "box" ,
                 "Scatter Plot" = "scatter",
                 "Connected Scatter Plot" = "conscatter",
-                "Bar Plot" = "bar"
+                "Bar Plot" = "bar",
+                "Principal Component Analysis" = "pca",
+                "Venn Diagram" = "venn",
+                "Ridge Plot" = "ridge"
                 
               )
           ),
@@ -76,6 +85,7 @@ ui <- shinyUI(fluidPage(
     
     tabPanel(
       "Input file Summary",
+      titlePanel("Dataset Summary"),
       pageWithSidebar(
         headerPanel(''),
         sidebarPanel(),
@@ -203,6 +213,28 @@ server <- shinyServer(function(input, output, session) {
     
   })
   
+  plot5 <- reactive({# PCA Scree Plot
+    
+    pcadat <- select_if(data(), is.numeric)
+    res.pca <- prcomp(pcadat, scale = TRUE)
+    p <- fviz_eig(res.pca)
+    print(p)
+  })
+  
+  plot6 <- reactive({# Venn Diagram
+    
+    vendat <- data() %>% select(c(input$anl1,input$anl2))
+    p <- ggVennDiagram(vendat)
+    print(p)
+  })
+  
+  plot7 <- reactive({# Ridge Diagram
+    
+    ggplot(data(), aes(x = input$anl2, y = factor(input$anl1))) +
+      geom_density_ridges(fill = "lightblue", alpha = 0.5)
+
+  })
+  
   
   # Return the requested graph
   graphInput <- reactive({
@@ -212,7 +244,9 @@ server <- shinyServer(function(input, output, session) {
       "scatter" = plot2(),
       "conscatter" = plot3(),
       "bar" = plot4(),
-      "pie" = plot6()
+      "pca" = plot5(),
+      "venn" = plot6(),
+      "ridge" = plot7()
       
       
     )
